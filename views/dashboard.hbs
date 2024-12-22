@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Project Dashboard</title>
+  <link rel="stylesheet" href="/site.css">
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/dashboard">Dashboard</a>
+      <a href="/teams">My Team</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Project Dashboard</h1>
+    {{!-- <a href="/project/create" class="create-project-button">Create New Project</a> --}}
+    <button class="create-project-button" onclick="createProject('/project/create')">Create a New Project</button>
+
+    <div class="projects-list">
+      {{#each projects}}
+      <div class="project-card" data-id="{{this._id}}">
+        <h2>{{this.title}}</h2>
+        <p>{{this.description}}</p>
+        <p><strong>Deadline:</strong> {{this.deadline}}</p>
+
+        <div class="project-card-actions">
+          <a href="/project/{{this._id}}" class="view-project-button">View Project</a>
+          <button class="delete-button" onclick="deleteProject('{{this._id}}')">Delete Project</button>
+        </div>
+      </div>
+      {{/each}}
+    </div>
+  </main>
+
+  <script>
+    async function deleteProject(projectId) {
+      if (confirm('Are you sure you want to delete this project?')) {
+        try {
+          const response = await fetch(`/project/${projectId}`, {
+            method: 'DELETE'
+          });
+          const result = await response.json();
+          if (result.success) {
+            alert(result.message);
+            document.querySelector(`[data-id="${projectId}"]`).remove(); // Remove the project element from the DOM
+          } else {
+            alert('Failed to delete the project');
+          }
+        } catch (error) {
+          console.error('Error deleting project:', error);
+          alert('Error deleting the project');
+        }
+      }
+    }
+async function createProject(link) {
+  try {
+    const response = await fetch(link, {
+      method: 'GET',
+      credentials: 'include', // Include cookies
+    });
+
+    console.log("the link:", link);
+
+    // Check if the response is JSON
+    const contentType = response.headers.get('Content-Type');
+    if (contentType && contentType.includes('application/json')) {
+      const result = await response.json();
+
+      if (!result.success) {
+        alert("Only Admin can create a Project");
+      } else {
+        console.log("Success, redirecting to:", link);
+        window.location.href = link;
+      }
+    } else if (contentType && contentType.includes('text/html')) {
+      // If HTML is returned, treat it as a valid response
+      console.log("HTML response received, redirecting to:", link);
+      window.location.href = link;
+    } else {
+      alert("Unexpected response format. Please contact support.");
+      console.error('Unexpected response:', await response.text());
+    }
+  } catch (error) {
+    console.error('Error accessing project/create:', error);
+    alert('Error accessing project/create');
+  }
+}
+  </script>
+</body>
+</html>

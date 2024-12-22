@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Project Details</title>
+  <link rel="stylesheet" href="/site.css">
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/dashboard">Dashboard</a>
+      <a href="/teams">My Team</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Project Details -->
+    <div class="project-details">
+      <h1>{{project.title}}</h1>
+      <p><strong>Description:</strong> {{project.description}}</p>
+      <p>
+        <strong>Status:</strong> 
+        <select onchange="updateProjectStatus('{{project._id}}', this.value)">
+              <option value="Not Started" {{#if (eq project.status "Not Started")}}selected{{/if}}>Not Started</option>
+              <option value="In Progress" {{#if (eq project.status "In Progress")}}selected{{/if}}>In Progress</option>
+              <option value="Completed" {{#if (eq project.status "Completed")}}selected{{/if}}>Completed</option>
+              <option value="On Hold" {{#if (eq project.status "On Hold")}}selected{{/if}}>On Hold</option>
+        </select>
+
+      </p>
+      <p><strong>Priority:</strong> {{project.priority}}</p>
+      <p><strong>Deadline:</strong> {{project.deadline}}</p>
+    </div>
+
+    <!-- Task List Table -->
+    <h2>Tasks</h2>
+    <table class="tasks-table">
+      <thead>
+        <tr>
+          <th>Task Name</th>
+          <th>Description</th>
+          <th>Deadline</th>
+          <th>Status</th>
+          <th>AssignedTo</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each project.tasks}}
+        <tr data-task-id="{{this._id}}">
+          <td>{{this.name}}</td>
+          <td>{{this.description}}</td>
+          <td>{{this.deadline}}</td>
+          <td>
+            <select onchange="updateTaskStatus('{{../project._id}}', '{{this._id}}', this.value)">
+              <option value="not-started" {{#if (eq this.status "not-started")}}selected{{/if}}>Not Started</option>
+              <option value="in-progress" {{#if (eq this.status "in-progress")}}selected{{/if}}>In Progress</option>
+              <option value="completed" {{#if (eq this.status "completed")}}selected{{/if}}>Completed</option>
+            </select>
+          </td>
+          <td>{{this.assignedTo}}</td>
+          <td>
+            <button class="delete-button" onclick="deleteTask('{{../project._id}}', '{{this._id}}')">Delete Task</button>
+          </td>
+        </tr>
+        {{else}}
+        <tr>
+          <td colspan="5">No tasks available for this project.</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+
+    <!-- Add Task Button -->
+    <a href="/task/create/{{project._id}}" class="view-project-button">Add Task</a>
+
+    <!-- Delete Project Button -->
+    <button class="delete-button" onclick="deleteProject('{{project._id}}')">Delete Project</button>
+  </main>
+
+  <script>
+    async function updateTaskStatus(projectId, taskId, newStatus) {
+      try {
+        const response = await fetch(`/project/${projectId}/task/${taskId}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: newStatus }),
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          alert('Task status updated successfully');
+        } else {
+          alert('Failed to update task status');
+        }
+      } catch (error) {
+        console.error('Error updating task status:', error);
+        alert('Error updating task status');
+      }
+    }
+    async function updateProjectStatus(projectId,  newStatus) {
+      console.log("Project ID: ", projectId)
+      if (!projectId){
+        alert("Invalid ProjectID")
+        return;
+      }
+      try {
+        const response = await fetch(`/project/${projectId}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: newStatus }),
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          alert('Project status updated successfully');
+        } else {
+          alert('Failed to update Project status');
+        }
+      } catch (error) {
+        console.error('Error updating Project status:', error);
+        alert('Error updating Project status');
+      }
+    }
+
+    async function deleteTask(projectId, taskId) {
+      if (confirm('Are you sure you want to delete this task?')) {
+        try {
+          const response = await fetch(`/project/${projectId}/task/${taskId}`, {
+            method: 'DELETE',
+          });
+          const result = await response.json();
+          if (result.success) {
+            alert(result.message);
+            document.querySelector(`[data-task-id="${taskId}"]`).remove();
+          } else {
+            alert('Failed to delete the task');
+          }
+        } catch (error) {
+          console.error('Error deleting task:', error);
+          alert('Error deleting the task');
+        }
+      }
+    }
+
+    async function deleteProject(projectId) {
+      if (confirm('Are you sure you want to delete this project?')) {
+        try {
+          const response = await fetch(`/project/${projectId}`, {
+            method: 'DELETE',
+          });
+          const result = await response.json();
+          if (result.success) {
+            alert(result.message);
+            window.location.href = '/dashboard';
+          } else {
+            alert('Failed to delete the project');
+          }
+        } catch (error) {
+          console.error('Error deleting project:', error);
+          alert('Error deleting the project');
+        }
+      }
+    }
+  </script>
+</body>
+</html>
